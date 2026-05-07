@@ -128,14 +128,17 @@ describe("skills", () => {
 			expect(diagnostics.some((d: ResourceDiagnostic) => d.message.includes("description is required"))).toBe(true);
 		});
 
-		it("should warn and skip skill when YAML frontmatter is invalid", () => {
+		it("should recover skill with invalid YAML frontmatter via tolerant parsing", () => {
 			const { skills, diagnostics } = loadSkillsFromDir({
 				dir: join(fixturesDir, "invalid-yaml"),
 				source: "test",
 			});
 
-			expect(skills).toHaveLength(0);
-			expect(diagnostics.some((d: ResourceDiagnostic) => d.message.includes("at line"))).toBe(true);
+			// Tolerant parsing recovers the skill by falling back to line-by-line parsing
+			expect(skills).toHaveLength(1);
+			expect(skills[0].name).toBe("invalid-yaml");
+			expect(skills[0].description).toBe("[unclosed bracket");
+			expect(diagnostics).toHaveLength(0);
 		});
 
 		it("should preserve multiline descriptions from YAML", () => {

@@ -282,7 +282,7 @@ function loadSkillFromFile(
 
 	try {
 		const rawContent = readFileSync(filePath, "utf-8");
-		const { frontmatter } = parseFrontmatter<SkillFrontmatter>(rawContent);
+		const { frontmatter } = parseFrontmatter<SkillFrontmatter>(rawContent, { tolerant: true });
 		const skillDir = dirname(filePath);
 		const parentDirName = basename(skillDir);
 
