@@ -1881,19 +1881,29 @@ export class InteractiveMode {
 		options?: ExtensionWidgetOptions,
 	): void {
 		const placement = options?.placement ?? "aboveEditor";
-		const removeExisting = (map: Map<string, Component & { dispose?(): void }>) => {
+		const targetMap = placement === "belowEditor" ? this.extensionWidgetsBelow : this.extensionWidgetsAbove;
+		const otherMap = placement === "belowEditor" ? this.extensionWidgetsAbove : this.extensionWidgetsBelow;
+		const disposeAndDelete = (map: Map<string, Component & { dispose?(): void }>) => {
 			const existing = map.get(key);
 			if (existing?.dispose) existing.dispose();
 			map.delete(key);
 		};
 
-		removeExisting(this.extensionWidgetsAbove);
-		removeExisting(this.extensionWidgetsBelow);
+		// Always drop any stale entry in the opposite placement (placement switch).
+		disposeAndDelete(otherMap);
 
 		if (content === undefined) {
+			disposeAndDelete(targetMap);
 			this.renderWidgets();
 			return;
 		}
+
+		// Dispose the previous component but keep the key so Map.set below
+		// overwrites in place — re-adding a fresh key would reorder the widget
+		// to the bottom on every update, causing widgets on different poll
+		// cadences to visibly swap positions each tick.
+		const previous = targetMap.get(key);
+		if (previous?.dispose) previous.dispose();
 
 		let component: Component & { dispose?(): void };
 
@@ -1912,7 +1922,6 @@ export class InteractiveMode {
 			component = content(this.ui, theme);
 		}
 
-		const targetMap = placement === "belowEditor" ? this.extensionWidgetsBelow : this.extensionWidgetsAbove;
 		targetMap.set(key, component);
 		this.renderWidgets();
 	}
